@@ -1,9 +1,11 @@
+#!/usr/bin/python3
 
-def dimacs_to_cnf(filename):
+import sys
+
+def parse_dimacs(dimacs_file):
     cnf = []
-    f_handle = open(filename, 'r')
-    for line in f_handle:
-        if line[0] in {'c', 'p'}:
+    for line in dimacs_file:
+        if line[0] in ('c', 'p'):
             continue
         literals = set(map(int, line.strip().split(' ')[:-1]))
         cnf.append(literals)
@@ -16,32 +18,55 @@ def select_lit(cnf):
 
 def assign_lit(cnf, lit, val):
     coef = 1 if val else -1
-    new_cnf = []
     new_cnf = [dis for dis in cnf if coef*lit not in dis]
     new_cnf = [dis.difference({-coef*lit}) for dis in new_cnf]
     return new_cnf
 
 def dpll(cnf, assign={}):
+
+    # empty cnf is true
     if len(cnf) == 0:
         return True, assign
-    elif any([len(dis) == 0 for dis in cnf]):
+
+    # cnf containing any empty disjunction is false
+    if any([len(dis) == 0 for dis in cnf]):
         return False, None
+
     lit = select_lit(cnf)
+
     # true branch
     new_cnf = assign_lit(cnf, lit, True)
     sat, vals = dpll(new_cnf, {**assign, lit:True})
     if sat:
         return sat, vals
+
     # false branch
     new_cnf = assign_lit(cnf, lit, False)
     sat, vals = dpll(new_cnf, {**assign, lit:False})
     if sat:
         return sat, vals
+
     return False, None
 
-def main():
-    fname = r'..\..\Homework Files-20200311\sudoku_easy.txt'
-    cnf = dimacs_to_cnf(fname)
-    print(dpll(cnf, {}))
+def main(argv):
 
-main()
+    if (len(argv) != 2):
+        print("Usage: {} <dimacs-file>")
+        return
+
+    file_path = argv[1]
+
+    with open(file_path, 'r') as file_handle:
+
+       cnf = parse_dimacs(file_handle)
+
+       sat, vals = dpll(cnf)
+
+       if not sat:
+           print("Not satisfiable.")
+           return
+
+       print(vals)
+
+if __name__ == "__main__":
+    main(sys.argv)
