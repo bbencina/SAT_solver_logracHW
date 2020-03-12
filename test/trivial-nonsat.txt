@@ -1,0 +1,4 @@
+c trivial non-satisfiable cnf 
+p spec
+1 0
+-1 0

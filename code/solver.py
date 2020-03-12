@@ -22,6 +22,21 @@ def assign_lit(cnf, lit, val):
     new_cnf = [dis.difference({-coef*lit}) for dis in new_cnf]
     return new_cnf
 
+def assign_unit_clauses(cnf, assignments={}):
+
+    unit_clauses = [dis for dis in cnf if len(dis) == 1]
+
+    if not unit_clauses:
+        return cnf, assignments
+
+    signed_lit = next(iter(unit_clauses[0]))
+    lit = abs(signed_lit)
+    val = signed_lit > 0
+
+    new_cnf = assign_lit(cnf, lit, val)
+
+    return assign_unit_clauses(new_cnf, {**assignments, lit:val})
+
 def dpll(cnf, assign={}):
 
     # empty cnf is true
@@ -32,17 +47,32 @@ def dpll(cnf, assign={}):
     if any([len(dis) == 0 for dis in cnf]):
         return False, None
 
-    lit = select_lit(cnf)
+    # unit propagation
+    new_cnf, new_assign = assign_unit_clauses(cnf)
+    new_assign = {**assign, **new_assign}
+
+    if len(new_cnf) == 0:
+        return True, new_assign
+
+    if any([len(dis) == 0 for dis in new_cnf]):
+            return False, None
+
+
+    # pure literal elimination: TODO
+
+
+    # branching literal assignment
+    lit = select_lit(new_cnf)
 
     # true branch
-    new_cnf = assign_lit(cnf, lit, True)
-    sat, vals = dpll(new_cnf, {**assign, lit:True})
+    new_cnf = assign_lit(new_cnf, lit, True)
+    sat, vals = dpll(new_cnf, {**new_assign, lit:True})
     if sat:
         return sat, vals
 
     # false branch
-    new_cnf = assign_lit(cnf, lit, False)
-    sat, vals = dpll(new_cnf, {**assign, lit:False})
+    new_cnf = assign_lit(new_cnf, lit, False)
+    sat, vals = dpll(new_cnf, {**new_assign, lit:False})
     if sat:
         return sat, vals
 
@@ -51,7 +81,7 @@ def dpll(cnf, assign={}):
 def main(argv):
 
     if (len(argv) != 2):
-        print("Usage: {} <dimacs-file>")
+        print("Usage: {} <dimacs-file>".format(argv[0]))
         return
 
     file_path = argv[1]
