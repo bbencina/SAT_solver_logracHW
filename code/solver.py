@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import sys
+import os
 
 def parse_dimacs(dimacs_file):
     cnf = []
@@ -10,6 +11,17 @@ def parse_dimacs(dimacs_file):
         literals = set(map(int, line.strip().split(' ')[:-1]))
         cnf.append(literals)
     return cnf
+
+def make_solution_file(f_name, vals):
+    with open(f_name, 'w+') as f_handle:
+        if not vals:
+            f_handle.write('0')
+            return
+        for lit in vals:
+            coef = 1 if vals[lit] else -1
+            f_handle.write(str(coef*lit))
+            f_handle.write(' ')
+
 
 def select_lit(cnf):
     for dis in cnf:
@@ -84,19 +96,25 @@ def main(argv):
         print("Usage: {} <dimacs-file>".format(argv[0]))
         return
 
-    file_path = argv[1]
+    in_file_path = argv[1]
 
-    with open(file_path, 'r') as file_handle:
+    with open(in_file_path, 'r') as file_handle:
+        print('Parsing input file...', end='')
+        cnf = parse_dimacs(file_handle)
+        print('Done.')
+        print('Checking satisfiability...', end='')
+        sat, vals = dpll(cnf)
+        print('Done.')
+        head, tail = os.path.split(in_file_path)
+        root_ext = os.path.splitext(tail)
+        o_file_name = root_ext[0] + '_solution' + root_ext[1]
+        if not sat:
+            make_solution_file(o_file_name, {})
+            print("Not satisfiable...wrote solution to " + o_file_name + ".")
+            return
 
-       cnf = parse_dimacs(file_handle)
-
-       sat, vals = dpll(cnf)
-
-       if not sat:
-           print("Not satisfiable.")
-           return
-
-       print(vals)
+        make_solution_file(o_file_name, vals)
+        print('Satisfiable...wrote solution to ' + o_file_name + '.')
 
 if __name__ == "__main__":
     main(sys.argv)
