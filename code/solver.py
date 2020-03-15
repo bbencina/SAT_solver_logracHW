@@ -67,7 +67,7 @@ def dpll(cnf, assign={}):
         return True, new_assign
 
     if any([len(dis) == 0 for dis in new_cnf]):
-            return False, None
+        return False, None
 
 
     # pure literal elimination: TODO
