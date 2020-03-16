@@ -18,7 +18,7 @@ def check_solution(cnf, vals):
         # scan each literal
         for lit in dis:
             # if one literal is correct, the whole disjunction is true -> break
-            if lit in vals:
+            if (-1)*lit not in vals:
                 dis_flag = True
                 break
         # if one disjunction is false, the whole conjunction is false
