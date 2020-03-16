@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import sys
+import sys, time
 #import os
 
 from functools import reduce
@@ -36,6 +36,48 @@ def assign_lit(cnf, lit, val):
     new_cnf = [dis.difference({-coef*lit}) for dis in new_cnf]
     return new_cnf
 
+def assign_multiple_literals(cnf, assignments):
+
+    if not assignments:
+        return cnf
+
+    keys = assignments.keys()
+
+    """
+    Disjunctive clauses should be removed from cnf when:
+
+    l is not negated (i.e. l>0), and abs(l) is assigned True
+    l is negated (i.e. l<0), and abs(l) is assigned False
+
+    This amounts to checking (l>0) XNOR assignments[abs(l)]
+
+    The code fails without converting the filtered cnf back to list.
+    """
+    test_dis_for_removal = lambda dis : not any([l for l in dis if abs(l) in keys and not (l>0)^(assignments[abs(l)])])
+
+    new_cnf = list(filter(test_dis_for_removal, cnf))
+
+    """
+    Literals should be removed from dis clauses of cnf when:
+
+    l is negated (i.e. l<0), and abs(l) is assigned True
+    l is not negated (i.e. l>0), and abs(l) is assigned False
+
+    This amouunts to checking (l<0) XNOR assignments[abs(l)]
+
+    new_cnf is generated via set comprehension to avoid duplicate dis clauses.
+    The inner sets (i.e. dis) need to be immutable for this to work.
+    Otherwise the code crashes with "TypeError: unhashable type: 'set'"
+    Hence frozenset is used in place of set.
+    """
+
+    test_lit_for_removal = lambda l : (abs(l) in keys) and not (l<0)^(assignments[abs(l)])
+
+    new_cnf = list({frozenset(dis.difference({l for l in dis if test_lit_for_removal(l) for dis in new_cnf}))})
+
+    return new_cnf
+
+
 def assign_unit_clauses(cnf, assignments={}):
 
     unit_clauses = [dis for dis in cnf if len(dis) == 1]
@@ -51,7 +93,23 @@ def assign_unit_clauses(cnf, assignments={}):
 
     return assign_unit_clauses(new_cnf, {**assignments, lit:val})
 
-def dpll(cnf, assign={}):
+
+def assign_pure_literals(cnf):
+
+    signed_literals = set().union(*cnf)
+
+    pure_literals = {lit for lit in signed_literals if -lit not in signed_literals}
+
+    assignments = {abs(lit) : (lit > 0) for lit in pure_literals}
+
+    if assignments:
+        new_cnf = assign_multiple_literals(cnf,assignments)
+        return new_cnf, assignments
+
+    return cnf, {}
+
+
+def dpll(cnf, assign={}, unit_prop=True, purelit_elim=True):
 
     # empty cnf is true
     if len(cnf) == 0:
@@ -61,18 +119,28 @@ def dpll(cnf, assign={}):
     if any([len(dis) == 0 for dis in cnf]):
         return False, None
 
+
     # unit propagation
-    cnf, new_assign = assign_unit_clauses(cnf)
-    assign = {**assign, **new_assign}
+    if unit_prop:
+        cnf, new_assign = assign_unit_clauses(cnf)
+        assign = {**assign, **new_assign}
 
-    if len(cnf) == 0:
-        return True, assign
+        if len(cnf) == 0:
+            return True, assign
 
-    if any([len(dis) == 0 for dis in cnf]):
-        return False, None
+        if any([len(dis) == 0 for dis in cnf]):
+            return False, None
 
+    # pure literal elimination
+    if purelit_elim:
+        cnf, new_assign = assign_pure_literals(cnf)
+        assign = {**assign, **new_assign}
 
-    # pure literal elimination: TODO
+        if len(cnf) == 0:
+            return True, assign
+
+        if any([len(dis) == 0 for dis in cnf]):
+            return False, None
 
 
     # branching literal assignment
@@ -80,13 +148,13 @@ def dpll(cnf, assign={}):
 
     # true branch
     new_cnf = assign_lit(cnf, lit, True)
-    sat, vals = dpll(new_cnf, {**assign, lit:True})
+    sat, vals = dpll(new_cnf, {**assign, lit:True}, unit_prop, purelit_elim)
     if sat:
         return sat, vals
 
     # false branch
     new_cnf = assign_lit(cnf, lit, False)
-    sat, vals = dpll(new_cnf, {**assign, lit:False})
+    sat, vals = dpll(new_cnf, {**assign, lit:False}, unit_prop, purelit_elim)
     if sat:
         return sat, vals
 
@@ -96,6 +164,7 @@ def dpll(cnf, assign={}):
 def verify_solution(cnf, vals):
 
     assign = lambda l : vals[l] if (l > 0) else not vals[-l]
+    #assign = lambda l : (vals[l] if (l > 0) else not vals[-l]) if abs(l) in vals.keys() else True
 
     for dis in cnf:
         if not reduce((lambda x,y : x or y), map(assign, dis)):
@@ -106,6 +175,9 @@ def verify_solution(cnf, vals):
 
 def main(argv):
 
+    unit_prop = True
+    purelit_elim = True
+
     if (len(argv) != 3):
         print("Usage: {} <dimacs-file> <output-file>".format(argv[0]))
         return
@@ -114,10 +186,19 @@ def main(argv):
     out_file_path = argv[2]
 
     with open(in_file_path, 'r') as file_handle:
-        #print('Parsing input file...', end='')
+        print("Parsing input file {}\n".format(in_file_path))
         cnf = parse_dimacs(file_handle)
 
-        sat, vals = dpll(cnf)
+        status_string = lambda x : "ENABLED" if x else "DISABLED"
+        print("Unit propagation: {}".format(status_string(unit_prop)))
+        print("Pure literal elimination: {}\n".format(status_string(purelit_elim)))
+        print("Attempting solution ...")
+
+        time_begin = time.time()
+        sat, vals = dpll(cnf, {}, unit_prop, purelit_elim)
+        time_end = time.time()
+
+        print("DPLL algorithm ran for {:f} seconds: ".format(time_end-time_begin), end='')
 
         if sat:
             print("SAT")
@@ -128,9 +209,10 @@ def main(argv):
                 print("Solution NOT valid!")
 
             make_solution_file(out_file_path, vals)
+            print("Solution written to {}".format(out_file_path))
 
         else:
-            print("Not SAT")
+            print("NONSAT")
 
 #        print('Done.')
 #        print('Checking satisfiability...', end='')
