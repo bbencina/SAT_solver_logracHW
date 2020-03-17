@@ -70,14 +70,14 @@ def assign_multiple_literals(cnf, assignments):
     Otherwise the code crashes with "TypeError: unhashable type: 'set'"
     Hence frozenset is used in place of set.
     """
-
     test_lit_for_removal = lambda l : (abs(l) in keys) and not (l<0)^(assignments[abs(l)])
 
-    new_cnf = list({frozenset(dis.difference({l for l in dis if test_lit_for_removal(l) for dis in new_cnf}))})
+    new_cnf = list({frozenset(dis.difference({l for l in dis if test_lit_for_removal(l)})) for dis in new_cnf})
 
     return new_cnf
 
 
+"""
 def assign_unit_clauses(cnf, assignments={}):
 
     unit_clauses = [dis for dis in cnf if len(dis) == 1]
@@ -92,7 +92,16 @@ def assign_unit_clauses(cnf, assignments={}):
     new_cnf = assign_lit(cnf, lit, val)
 
     return assign_unit_clauses(new_cnf, {**assignments, lit:val})
+"""
 
+def assign_unit_clauses(cnf):
+
+    assignments = { abs(lit) : (lit > 0) for dis in cnf for lit in dis if len(dis) == 1 }
+
+    if assignments:
+        return assign_multiple_literals(cnf, assignments), assignments
+
+    return cnf, {}
 
 def assign_pure_literals(cnf):
 
