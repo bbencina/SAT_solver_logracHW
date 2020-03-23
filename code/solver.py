@@ -1,8 +1,7 @@
 #!/usr/bin/python3
 
-import sys, time
-#import os
-
+import argparse
+import time
 from functools import reduce
 
 def parse_dimacs(dimacs_file):
@@ -182,17 +181,19 @@ def verify_solution(cnf, vals):
     return True
 
 
-def main(argv):
+def main():
 
-    unit_prop = True
-    purelit_elim = True
+    cli_parser = argparse.ArgumentParser()
+    cli_parser.add_argument('input_file', help='DIMACS file containing CNF', metavar='input-file')
+    cli_parser.add_argument('-o', help='output file to write solution if SAT', metavar='output-file')
+    cli_parser.add_argument('-nU', '--no-unit-prop', help='disable unit propagation', action='store_true')
+    cli_parser.add_argument('-nP', '--no-pure-elim', help='disable pure literal elimination', action='store_true')
+    cli_args = cli_parser.parse_args()
 
-    if (len(argv) != 3):
-        print("Usage: {} <dimacs-file> <output-file>".format(argv[0]))
-        return
-
-    in_file_path = argv[1]
-    out_file_path = argv[2]
+    in_file_path = cli_args.input_file
+    out_file_path = cli_args.o
+    unit_prop = not cli_args.no_unit_prop
+    purelit_elim = not cli_args.no_pure_elim
 
     with open(in_file_path, 'r') as file_handle:
         print("Parsing input file {}\n".format(in_file_path))
@@ -201,7 +202,7 @@ def main(argv):
         status_string = lambda x : "ENABLED" if x else "DISABLED"
         print("Unit propagation: {}".format(status_string(unit_prop)))
         print("Pure literal elimination: {}\n".format(status_string(purelit_elim)))
-        print("Attempting solution ...")
+        print("Attempting solution...")
 
         time_begin = time.time()
         sat, vals = dpll(cnf, {}, unit_prop, purelit_elim)
@@ -217,8 +218,9 @@ def main(argv):
             else:
                 print("Solution NOT valid!")
 
-            make_solution_file(out_file_path, vals)
-            print("Solution written to {}".format(out_file_path))
+            if out_file_path:
+                make_solution_file(out_file_path, vals)
+                print("Solution written to {}".format(out_file_path))
 
         else:
             print("NONSAT")
@@ -239,4 +241,4 @@ def main(argv):
 #        print('Satisfiable...wrote solution to ' + o_file_name + '.')
 
 if __name__ == "__main__":
-    main(sys.argv)
+    main()
