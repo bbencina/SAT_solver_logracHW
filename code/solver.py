@@ -37,44 +37,39 @@ def assign_lit(cnf, lit, val):
 
 def assign_multiple_literals(cnf, assignments):
 
-    if not assignments:
-        return cnf
-
-    keys = assignments.keys()
-
     """
     Disjunctive clauses should be removed from cnf when:
 
     l is not negated (i.e. l>0), and abs(l) is assigned True
     l is negated (i.e. l<0), and abs(l) is assigned False
 
-    This amounts to checking (l>0) XNOR assignments[abs(l)]
+    This amounts to checking (l>0) == assignments[abs(l)].
 
-    The code fails without converting the filtered cnf back to list.
-    """
-    test_dis_for_removal = lambda dis : not any([l for l in dis if abs(l) in keys and not (l>0)^(assignments[abs(l)])])
-
-    new_cnf = list(filter(test_dis_for_removal, cnf))
-
-    """
     Literals should be removed from dis clauses of cnf when:
 
     l is negated (i.e. l<0), and abs(l) is assigned True
     l is not negated (i.e. l>0), and abs(l) is assigned False
 
-    This amouunts to checking (l<0) XNOR assignments[abs(l)]
+    This amouunts to checking (l<0) == assignments[abs(l)].
 
     new_cnf is generated via set comprehension to avoid duplicate dis clauses.
     The inner sets (i.e. dis) need to be immutable for this to work.
     Otherwise the code crashes with "TypeError: unhashable type: 'set'"
     Hence frozenset is used in place of set.
     """
-    test_lit_for_removal = lambda l : (abs(l) in keys) and not (l<0)^(assignments[abs(l)])
 
-    new_cnf = list({frozenset(dis.difference({l for l in dis if test_lit_for_removal(l)})) for dis in new_cnf})
+    if not assignments:
+        return cnf
+
+    test_dis_for_removal = lambda dis : not any([ l for l in dis if abs(l) in assignments and (l>0) == assignments[abs(l)] ])
+
+    test_lit_for_removal = lambda l : abs(l) in assignments and (l<0) == assignments[abs(l)]
+
+    new_cnf = filter(test_dis_for_removal, cnf)
+
+    new_cnf = {frozenset(dis.difference({l for l in dis if test_lit_for_removal(l)})) for dis in new_cnf}
 
     return new_cnf
-
 
 """
 def assign_unit_clauses(cnf, assignments={}):
