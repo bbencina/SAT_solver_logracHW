@@ -103,10 +103,29 @@ def assign_unit_clauses(cnf):
     return cnf, {}
 
 def assign_pure_literals(cnf):
+    LITS = {}
+    for dis in cnf:
+        for signed_lit in dis:
+            lit = abs(signed_lit)
+            if lit in LITS:
+                # skip ents w/ flase flags
+                if not LITS[lit][1]:
+                    continue
+                # check if ents have the same sign; if not:
+                if LITS[lit][0] * signed_lit < 0:
+                    LITS[lit][1] = False
+                    continue
+            else:
+                sign = 1 if signed_lit > 0 else -1
+                LITS[lit] = [sign, True]
+    pure_literals = set()
+    for lit in LITS:
+        if LITS[lit][1]:
+            pure_literals.add(LITS[lit][0]*lit)
 
-    signed_literals = set().union(*cnf)
+    #signed_literals = set().union(*cnf)
 
-    pure_literals = {lit for lit in signed_literals if -lit not in signed_literals}
+    #pure_literals = {lit for lit in signed_literals if -lit not in signed_literals}
 
     assignments = {abs(lit) : (lit > 0) for lit in pure_literals}
 
