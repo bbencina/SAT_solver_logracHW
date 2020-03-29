@@ -171,8 +171,8 @@ def dpll(cnf, assign={}, unit_prop=True, purelit_elim=True):
 
 def verify_solution(cnf, vals):
 
-    assign = lambda l : vals[l] if (l > 0) else not vals[-l]
-    #assign = lambda l : (vals[l] if (l > 0) else not vals[-l]) if abs(l) in vals.keys() else True
+    #assign = lambda l : vals[l] if (l > 0) else not vals[-l]
+    assign = lambda l : (vals[l] if (l > 0) else not vals[-l]) if abs(l) in vals else True
 
     for dis in cnf:
         if not reduce((lambda x,y : x or y), map(assign, dis)):
