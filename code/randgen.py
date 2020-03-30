@@ -11,6 +11,13 @@ import solver
 GEN_PATH = os.path.join('..', 'randgenerated')
 
 def generate_cnf(n_lits, n_clauses, dis_size):
+    '''Generates a random cnf formula from parameters.
+    :param n_lits - number of literals we want in the formula (some may be skipped)
+    :param n_clauses - number of clauses we want the formula to contain
+    :param dis_size - the max number of literals we want in one clause
+
+    :returns cnf - a list of sets (each set one disjunction)
+    '''
     cnf = []
     for i in range(n_clauses):
         dis = set()
@@ -24,6 +31,16 @@ def generate_cnf(n_lits, n_clauses, dis_size):
     return cnf
 
 def cnf_to_dimacs(cnf, n_lits, n_clauses, dis_size, file_name, params=''):
+    '''Creates a dimacs file from a given cnf.
+    :param cnf - a list of sets (each set one disjunction)
+    :param n_lits - number of literals we want in the formula (some may be skipped)
+    :param n_clauses - number of clauses we want the formula to contain
+    :param dis_size - the max number of literals we want in one clause
+    :param file_name - the name of the file we want to create
+    :param params - additional information we want to add as a comment, empty by default
+
+    :returns None
+    '''
     dimacs = open(file_name, 'w+')
     dimacs.write('c This file was generated automatically by generator.py\n')
     dimacs.write('c\n')
@@ -38,9 +55,13 @@ def cnf_to_dimacs(cnf, n_lits, n_clauses, dis_size, file_name, params=''):
     dimacs.close()
 
 def main():
+    '''Main body of the program. Gets automatically called if this script is called from the command line.
+    '''
+    # create directory for dumping
     if not os.path.exists(GEN_PATH):
         os.mkdir(GEN_PATH)
 
+    # parse command line arguments
     cli_parser = argparse.ArgumentParser()
     cli_parser.add_argument('num_lits', help='number of literals', metavar='num-lits')
     cli_parser.add_argument('num_clauses', help='number of clauses', metavar='num-clauses')

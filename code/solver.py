@@ -5,6 +5,11 @@ import time
 from functools import reduce
 
 def parse_dimacs(dimacs_file):
+    '''Takes in dimacs file handle and returns a cnf formula as a list of sets.
+    :param dimacs_file - a plaintext dimacs file handle
+
+    :returns cnf - a list of sets (each set one disjunction)
+    '''
     cnf = []
     for line in dimacs_file:
         if line[0] in ('c', 'p'):
@@ -14,6 +19,12 @@ def parse_dimacs(dimacs_file):
     return cnf
 
 def make_solution_file(f_name, vals):
+    '''Creates a dimacs compliant solution file.
+    :param f_name - string file name
+    :param vals - dpll created dictionary of values
+
+    :returns None
+    '''
     with open(f_name, 'w+') as f_handle:
         if not vals:
             f_handle.write('0')
@@ -25,17 +36,35 @@ def make_solution_file(f_name, vals):
 
 
 def select_lit(cnf):
+    '''Selects first literal in the cnf.
+    :param cnf - a list of sets (each set one disjunction)
+
+    :returns first literal
+    '''
     for dis in cnf:
         for lit in dis:
             return abs(lit)
 
 def assign_lit(cnf, lit, val):
+    '''Updates cnf by replacing all occurences of lit with value val.
+    :param cnf - a list of sets (each set one disjunction)
+    :param lit - integer number of literal in cnf
+    :param val - boolean denoting the value we want to assign to lit
+
+    :returns new_cnf - an updated list of sets (each set one disjunction)
+    '''
     coef = 1 if val else -1
     new_cnf = [dis for dis in cnf if coef*lit not in dis]
     new_cnf = [dis.difference({-coef*lit}) for dis in new_cnf]
     return new_cnf
 
 def assign_multiple_literals(cnf, assignments):
+    '''Updates multiple literals of cnf.
+    :param cnf - a list of sets (each set one disjunction)
+    :param assignments - a dictionary with literals as keys and their booleans as values
+
+    :returns new_cnf - an updated list of sets (each set one disjunction)
+    '''
 
     """
     Disjunctive clauses should be removed from cnf when:
@@ -50,7 +79,7 @@ def assign_multiple_literals(cnf, assignments):
     l is negated (i.e. l<0), and abs(l) is assigned True
     l is not negated (i.e. l>0), and abs(l) is assigned False
 
-    This amouunts to checking (l<0) == assignments[abs(l)].
+    This amounts to checking (l<0) == assignments[abs(l)].
 
     new_cnf is generated via set comprehension to avoid duplicate dis clauses.
     The inner sets (i.e. dis) need to be immutable for this to work.
@@ -89,7 +118,11 @@ def assign_unit_clauses(cnf, assignments={}):
 """
 
 def assign_unit_clauses(cnf):
+    '''Finds and assigns all unit clauses of a given cnf.
+    :param cnf - a list of sets (each set one disjunction)
 
+    :returns cnf, assignments
+    '''
     assignments = { abs(lit) : (lit > 0) for dis in cnf for lit in dis if len(dis) == 1 }
 
     if assignments:
@@ -98,6 +131,11 @@ def assign_unit_clauses(cnf):
     return cnf, {}
 
 def assign_pure_literals(cnf):
+    '''Finds and ssigns all pure literals of a given cnf.
+    :param cnf - a list of sets (each set one disjunction)
+
+    returns cnf, assignments
+    '''
     LITS = {}
     for dis in cnf:
         for signed_lit in dis:
@@ -132,7 +170,15 @@ def assign_pure_literals(cnf):
 
 
 def dpll(cnf, assign={}, unit_prop=True, purelit_elim=True):
+    '''The core dpll algorithm.
+    :param cnf - a list of sets (each set one disjunction)
+    :param assign - a dictionary of assignments in a given recursive step, empty by default
+    :param unit_prop - flag to turn on/off unit propagation, True by default
+    :param purelit_elim - flag to turn on/off pure literal elimination, True by default (set to False if program taking too long)
 
+    :returns sat - boolean denoting the satisfiability of the formula
+    :returns assign - a dictionary containing one satisfiable valuation, None if sat is False
+    '''
     # empty cnf is true
     if len(cnf) == 0:
         return True, assign
@@ -184,7 +230,12 @@ def dpll(cnf, assign={}, unit_prop=True, purelit_elim=True):
 
 
 def verify_solution(cnf, vals):
+    '''Function to verify sat solutions on the fly.
+    :param cnf - a list of sets (each set one disjunction)
+    :param vals - a dictionary containing the valuation we want to verify
 
+    :returns True if the valuation is correct, False otherwise
+    '''
     #assign = lambda l : vals[l] if (l > 0) else not vals[-l]
     assign = lambda l : (vals[l] if (l > 0) else not vals[-l]) if abs(l) in vals else True
 
@@ -196,7 +247,8 @@ def verify_solution(cnf, vals):
 
 
 def main():
-
+    '''Main body of the program. Gets automatically called if this script is called from the command line.
+    '''
     cli_parser = argparse.ArgumentParser()
     cli_parser.add_argument('input_file', help='DIMACS file containing CNF', metavar='input-file')
     cli_parser.add_argument('-o', help='output file to write solution if SAT', metavar='output-file')
