@@ -74,6 +74,10 @@ def main():
     dis_size = int(cli_args.dis_size)
     rep = int(cli_args.repeat)
 
+    GOOD_CASES = {}
+    SATS = 0
+    NONSATS = 0
+
     for i in range(rep):
         print('Case {0}/{1}: '.format(str(i+1), str(rep)), end='')
         cnf = generate_cnf(n_lits, n_clauses, dis_size)
@@ -87,9 +91,14 @@ def main():
         if sat:
             print("SAT")
             check = solver.verify_solution(cnf,vals)
+            SATS += 1
             if check:
                 print("Solution is valid.")
                 base_name = str(n_lits) + '_' + str(n_clauses) + '_' + str(dis_size) + '_' + str(hash(str(cnf)))
+                if time_end - time_begin > 30 and time_end - time_begin < 90:
+                    GOOD_CASES[base_name] = time_end - time_begin
+                else:
+                    continue
                 file_name = os.path.join(GEN_PATH, base_name)
                 cnf_to_dimacs(cnf, n_lits, n_clauses, dis_size, file_name + '.txt', '')
                 solver.make_solution_file(file_name + '_solution.txt', vals)
@@ -99,6 +108,15 @@ def main():
 
         else:
             print("NONSAT")
+            NONSATS += 1
+    report = open('00report.txt', 'w+')
+    print('Good cases:')
+    for case in GOOD_CASES:
+        print(case, GOOD_CASES[case])
+        report.write(case + '  :  ' + str(GOOD_CASES[case]) + '\n')
+    report.close()
+    print('Satisfiable: ' + str(SATS))
+    print('Not satisfiable: ' + str(NONSATS))
 
 if __name__ == '__main__':
     main()
