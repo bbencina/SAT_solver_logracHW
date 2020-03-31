@@ -1,3 +1,14 @@
+import random as rd
+
+def generate_graph(n):
+    V = [*range(1, n + 1)]
+    E = []
+    for i in range(1, n):
+        for j in range(i + 1, n + 1):
+            if bool(rd.getrandbits(1)):
+                E.append((i, j))
+    return V, E
+
 def to_dimacs(i, j, k):
     '''Auxiliary function calculating the number of the literal.'''
     # vertex i is colored with color j, k is the number of all colors
