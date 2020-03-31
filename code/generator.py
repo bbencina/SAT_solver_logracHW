@@ -6,7 +6,7 @@ import os
 
 import solver
 
-GEN_PATH = os.path.join('..', 'graphs')
+GRAPH_PATH = os.path.join('..', 'graphs')
 
 def generate_graph(n):
     V = [*range(1, n + 1)]
@@ -71,8 +71,8 @@ def main():
     '''Main body of the program. Gets automatically called if this script is called from the command line.
     '''
     # create directory for dumping
-    if not os.path.exists(GEN_PATH):
-        os.mkdir(GEN_PATH)
+    if not os.path.exists(GRAPH_PATH):
+        os.mkdir(GRAPH_PATH)
 
     # parse command line arguments
     cli_parser = argparse.ArgumentParser()
@@ -86,33 +86,36 @@ def main():
     rep = int(cli_args.repeat)
 
     for i in range(rep):
-        print('Case {0}/{1}: '.format(str(i+1), str(rep)), end='')
-        V, E = generate_graph(n_ver)
-        cnf = gen(V, E, k)
-        n_lits = to_dimacs(n_ver, k, k)
-        n_clauses = len(cnf)
+        try:
+            print('Case {0}/{1}: '.format(str(i+1), str(rep)), end='')
+            V, E = generate_graph(n_ver)
+            cnf = gen(V, E, k)
+            n_lits = to_dimacs(n_ver, k, k)
+            n_clauses = len(cnf)
 
-        time_begin = time.time()
-        sat, vals = solver.dpll(cnf, {}, True, True)
-        time_end = time.time()
+            time_begin = time.time()
+            sat, vals = solver.dpll(cnf, {}, True, True)
+            time_end = time.time()
 
-        print("DPLL algorithm ran for {:f} seconds: ".format(time_end-time_begin), end='')
+            print("DPLL algorithm ran for {:f} seconds: ".format(time_end-time_begin), end='')
 
-        if sat:
-            print("SAT")
-            check = solver.verify_solution(cnf,vals)
-            if check:
-                print("Solution is valid.")
-                base_name = str(n_lits) + '_' + str(n_clauses) + '_' + str(hash(str(cnf)))
-                file_name = os.path.join(GEN_PATH, base_name)
-                cnf_to_dimacs(cnf, n_lits, n_clauses, file_name + '.txt', '')
-                solver.make_solution_file(file_name + '_solution.txt', vals)
-                print("Solution written to {}".format(file_name + '_solution.txt'))
+            if sat:
+                print("SAT")
+                check = solver.verify_solution(cnf,vals)
+                if check:
+                    print("Solution is valid.")
+                    base_name = str(n_lits) + '_' + str(n_clauses) + '_' + str(hash(str(cnf)))
+                    file_name = os.path.join(GRAPH_PATH, base_name)
+                    cnf_to_dimacs(cnf, n_lits, n_clauses, file_name + '.txt', '')
+                    solver.make_solution_file(file_name + '_solution.txt', vals)
+                    print("Solution written to {}".format(file_name + '_solution.txt'))
+                else:
+                    print("Solution NOT valid!")
+
             else:
-                print("Solution NOT valid!")
-
-        else:
-            print("NONSAT")
+                print("NONSAT")
+        except:
+            continue
 
 if __name__ == '__main__':
     main()

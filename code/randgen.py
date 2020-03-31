@@ -52,7 +52,7 @@ def cnf_to_dimacs(cnf, n_lits, n_clauses, dis_size, file_name, params=''):
     :returns None
     '''
     dimacs = open(file_name, 'w+')
-    dimacs.write('c This file was generated automatically by generator.py\n')
+    dimacs.write('c This file was generated automatically by randgen.py\n')
     dimacs.write('c\n')
     dimacs.write('c params: ' + params + '\n')
     dimacs.write('p cnf: {0} {1}, max disjunction size {2}\n'.format(str(n_lits),
