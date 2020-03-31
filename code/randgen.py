@@ -18,10 +18,20 @@ def generate_cnf(n_lits, n_clauses, dis_size):
 
     :returns cnf - a list of sets (each set one disjunction)
     '''
+    # first generate a solution
+    solution = []
+    for i in range(n_lits):
+        sign_gen = rd.randint(1, 2)
+        sign = 1 if sign_gen == 1 else -1
+        solution.append(sign*(i+1))
+    rd.shuffle(solution)
     cnf = []
     for i in range(n_clauses):
         dis = set()
-        d_size = rd.randint(1, dis_size)
+        dis.add(solution[i % n_lits])
+        if dis_size == 1:
+            continue
+        d_size = rd.randint(1, dis_size-1)
         for j in range(d_size):
             lit = rd.randint(1, n_lits)
             sign_gen = rd.randint(1, 2)
@@ -79,37 +89,40 @@ def main():
     NONSATS = 0
 
     for i in range(rep):
-        print('Case {0}/{1}: '.format(str(i+1), str(rep)), end='')
-        cnf = generate_cnf(n_lits, n_clauses, dis_size)
+        try:
+            print('Case {0}/{1}: '.format(str(i+1), str(rep)), end='')
+            cnf = generate_cnf(n_lits, n_clauses, dis_size)
 
-        time_begin = time.time()
-        sat, vals = solver.dpll(cnf, {}, True, True)
-        time_end = time.time()
+            time_begin = time.time()
+            sat, vals = solver.dpll(cnf, {}, True, True)
+            time_end = time.time()
 
-        print("DPLL algorithm ran for {:f} seconds: ".format(time_end-time_begin), end='')
+            print("DPLL algorithm ran for {:f} seconds: ".format(time_end-time_begin), end='')
 
-        if sat:
-            print("SAT")
-            check = solver.verify_solution(cnf,vals)
-            SATS += 1
-            if check:
-                print("Solution is valid.")
-                base_name = str(n_lits) + '_' + str(n_clauses) + '_' + str(dis_size) + '_' + str(hash(str(cnf)))
-                if time_end - time_begin > 30 and time_end - time_begin < 90:
-                    GOOD_CASES[base_name] = time_end - time_begin
+            if sat:
+                print("SAT")
+                check = solver.verify_solution(cnf,vals)
+                SATS += 1
+                if check:
+                    print("Solution is valid.")
+                    base_name = str(n_lits) + '_' + str(n_clauses) + '_' + str(dis_size) + '_' + str(hash(str(cnf)))
+                    if time_end - time_begin > 1 and time_end - time_begin < 90:
+                        GOOD_CASES[base_name] = time_end - time_begin
+                    else:
+                        continue
+                    file_name = os.path.join(GEN_PATH, base_name)
+                    cnf_to_dimacs(cnf, n_lits, n_clauses, dis_size, file_name + '.txt', '')
+                    solver.make_solution_file(file_name + '_solution.txt', vals)
+                    print("Solution written to {}".format(file_name + '_solution.txt'))
                 else:
-                    continue
-                file_name = os.path.join(GEN_PATH, base_name)
-                cnf_to_dimacs(cnf, n_lits, n_clauses, dis_size, file_name + '.txt', '')
-                solver.make_solution_file(file_name + '_solution.txt', vals)
-                print("Solution written to {}".format(file_name + '_solution.txt'))
-            else:
-                print("Solution NOT valid!")
+                    print("Solution NOT valid!")
 
-        else:
-            print("NONSAT")
-            NONSATS += 1
-    report = open('00report.txt', 'w+')
+            else:
+                print("NONSAT")
+                NONSATS += 1
+        except:
+            continue
+    report = open(os.path.join(GEN_PATH, '00report.txt'), 'w+')
     print('Good cases:')
     for case in GOOD_CASES:
         print(case, GOOD_CASES[case])
