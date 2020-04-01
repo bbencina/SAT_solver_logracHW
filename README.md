@@ -26,12 +26,12 @@ The remaining two scripts are for randomly generating test cases and need not be
 ```
 python3 randgen.py <num-literals> <num-clauses> <max-clause-size> <num-reps>
 ```
-The ```generator.py``` script contains functions for generating cnf formulas for solving the *k*-colourability problem on a given graph. When run as a program, it randomly generates graphs and test them. The syntax is
+The ```generator.py``` script contains functions for generating cnf formulas for solving the *k*-colourability problem on a given graph. When run as a program, it randomly generates graphs and tests them. The syntax is
 ```
 python3 generator.py <num-vertices> <num-colours> <num-reps>
 ```
 
-Along with the code, there is also a ```test/``` directory, which contains some of the tests we also found useful during programming, including more colourability problems and a couple of [SATLIB - Benchmark problems](https://www.cs.ubc.ca/~hoos/SATLIB/benchm.html), but they also need not be run.
+Along with the code, there is also a ```test/``` directory, which contains some of the tests we also found useful during programming, including more colourability problems and a couple of [SATLIB - Benchmark problems](https://www.cs.ubc.ca/~hoos/SATLIB/benchm.html) and [ToughSAT](https://toughsat.appspot.com/) problems, but they also need not be run. (**Warning**: SATLIB problems are usually double-spaced, so modify the parse_dimacs function in solver.py.)
 
 # Authors
 - Benjamin Benčina,
